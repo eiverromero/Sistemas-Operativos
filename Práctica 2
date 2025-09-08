@@ -1,0 +1,37 @@
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#define NUMERO_DE_HILOS 5   // Cantidad de hilos a crear
+
+// Función que ejecutará cada hilo
+void *imprimir_hola_mundo(void *arg) {
+    int id = *(int*)arg;  // Recuperamos el ID del hilo
+    printf("Hola mundo. Soy el hilo %d\n", id);
+    return NULL;          // El hilo termina
+}
+
+int main() {
+    pthread_t hilos[NUMERO_DE_HILOS];  // Arreglo de identificadores de hilos
+    int ids[NUMERO_DE_HILOS];          // Arreglo para pasar los IDs
+    int i;
+
+    // Crear hilos
+    for (i = 0; i < NUMERO_DE_HILOS; i++) {
+        ids[i] = i;  // Asignamos un número a cada hilo
+        printf("Main: creando el hilo %d\n", i);
+
+        if (pthread_create(&hilos[i], NULL, imprimir_hola_mundo, &ids[i]) != 0) {
+            printf("Error al crear el hilo\n");
+            exit(1);
+        }
+    }
+
+    // Esperar a que todos los hilos terminen
+    for (i = 0; i < NUMERO_DE_HILOS; i++) {
+        pthread_join(hilos[i], NULL);
+    }
+
+    printf("Main: todos los hilos han terminado.\n");
+    return 0;
+}
