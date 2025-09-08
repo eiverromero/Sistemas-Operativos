@@ -1,0 +1,57 @@
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#define NUM_HILOS 4        // Número de hilos
+#define TAM_ARREGLO 16     // Tamaño del arreglo
+
+int arreglo[TAM_ARREGLO];           // Arreglo de números
+int suma_parcial[NUM_HILOS];        // Resultados parciales de cada hilo
+
+// Función que calculará la suma parcial
+void *sumar(void *arg) {
+    int id = *(int *)arg;  // ID del hilo
+    int inicio = id * (TAM_ARREGLO / NUM_HILOS);
+    int fin = inicio + (TAM_ARREGLO / NUM_HILOS);
+    int suma = 0;
+
+    for (int i = inicio; i < fin; i++) {
+        suma += arreglo[i];
+    }
+
+    suma_parcial[id] = suma;
+    pthread_exit(NULL);
+}
+
+int main() {
+    pthread_t hilos[NUM_HILOS];
+    int ids[NUM_HILOS];
+    int suma_total = 0;
+
+    // Inicializamos el arreglo con valores del 1 al 16
+    for (int i = 0; i < TAM_ARREGLO; i++) {
+        arreglo[i] = i + 1;
+    }
+
+    // Creamos los hilos
+    for (int i = 0; i < NUM_HILOS; i++) {
+        ids[i] = i;
+        if (pthread_create(&hilos[i], NULL, sumar, &ids[i]) != 0) {
+            perror("Error al crear hilo");
+            exit(1);
+        }
+    }
+
+    // Esperamos que todos los hilos terminen
+    for (int i = 0; i < NUM_HILOS; i++) {
+        pthread_join(hilos[i], NULL);
+    }
+
+    // Sumamos los resultados parciales
+    for (int i = 0; i < NUM_HILOS; i++) {
+        suma_total += suma_parcial[i];
+    }
+
+    printf("La suma total del arreglo es: %d\n", suma_total);
+    return 0;
+}
