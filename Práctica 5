@@ -1,0 +1,75 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+#define N 5   // tamaño del buffer
+
+int buffer[N];
+int contador = 0;     // número de elementos en el buffer
+int entrada = 0, salida = 0;
+
+sem_t vacio;          // cuenta espacios vacíos
+sem_t lleno;          // cuenta elementos llenos
+pthread_mutex_t mutex; // exclusión mutua
+
+void *productor(void *arg) {
+    int elemento;
+    while (1) {
+        elemento = rand() % 100; // producir un elemento
+
+        sem_wait(&vacio);        // esperar si no hay espacio
+        pthread_mutex_lock(&mutex);
+
+        buffer[entrada] = elemento;
+        entrada = (entrada + 1) % N;
+        contador++;
+
+        printf("Productor produjo: %d | Elementos en buffer: %d\n", elemento, contador);
+
+        pthread_mutex_unlock(&mutex);
+        sem_post(&lleno);       // señalar que hay un artículo nuevo
+
+        sleep(1);
+    }
+}
+
+void *consumidor(void *arg) {
+    int elemento;
+    while (1) {
+        sem_wait(&lleno);       // esperar si no hay elementos
+        pthread_mutex_lock(&mutex);
+
+        elemento = buffer[salida];
+        salida = (salida + 1) % N;
+        contador--;
+
+        printf("Consumidor consumió: %d | Elementos en buffer: %d\n", elemento, contador);
+
+        pthread_mutex_unlock(&mutex);
+        sem_post(&vacio);       // señalar que hay un espacio vacío
+
+        sleep(2);
+    }
+}
+
+int main() {
+    pthread_t prod, cons;
+
+    sem_init(&vacio, 0, N);     // N espacios vacíos al inicio
+    sem_init(&lleno, 0, 0);     // 0 elementos llenos al inicio
+    pthread_mutex_init(&mutex, NULL);
+
+    pthread_create(&prod, NULL, productor, NULL);
+    pthread_create(&cons, NULL, consumidor, NULL);
+
+    pthread_join(prod, NULL);
+    pthread_join(cons, NULL);
+
+    sem_destroy(&vacio);
+    sem_destroy(&lleno);
+    pthread_mutex_destroy(&mutex);
+
+    return 0;
+}
